@@ -1,14 +1,10 @@
 #include "renderer.h"
-#include <iostream>
-#include <string>
 
-Renderer::Renderer(const std::size_t screen_width,
-                   const std::size_t screen_height,
-                   const std::size_t grid_width, const std::size_t grid_height)
-    : screen_width(screen_width),
-      screen_height(screen_height),
-      grid_width(grid_width),
-      grid_height(grid_height) {
+void renderer::init(const std::size_t screenWidth,
+                   const std::size_t screenHeight)
+ {
+  _screenWidth = screenWidth;
+  _screenHeight = screenHeight;
   // Initialize SDL
   if (SDL_Init(SDL_INIT_VIDEO) < 0) {
     std::cerr << "SDL could not initialize.\n";
@@ -16,66 +12,97 @@ Renderer::Renderer(const std::size_t screen_width,
   }
 
   // Create Window
-  sdl_window = SDL_CreateWindow("Snake Game", SDL_WINDOWPOS_CENTERED,
-                                SDL_WINDOWPOS_CENTERED, screen_width,
-                                screen_height, SDL_WINDOW_SHOWN);
+  _sdlWindow = SDL_CreateWindow("Asteroids Game", SDL_WINDOWPOS_CENTERED,
+                                SDL_WINDOWPOS_CENTERED, _screenWidth,
+                                _screenHeight, SDL_WINDOW_SHOWN);
 
-  if (nullptr == sdl_window) {
+  if (nullptr == _sdlWindow) {
     std::cerr << "Window could not be created.\n";
     std::cerr << " SDL_Error: " << SDL_GetError() << "\n";
   }
 
   // Create renderer
-  sdl_renderer = SDL_CreateRenderer(sdl_window, -1, SDL_RENDERER_ACCELERATED);
-  if (nullptr == sdl_renderer) {
+  _sdlRenderer = SDL_CreateRenderer(_sdlWindow, -1, SDL_RENDERER_ACCELERATED);
+  if (nullptr == _sdlRenderer) {
     std::cerr << "Renderer could not be created.\n";
     std::cerr << "SDL_Error: " << SDL_GetError() << "\n";
   }
 }
 
-Renderer::~Renderer() {
-  SDL_DestroyWindow(sdl_window);
+renderer::~renderer() {
+  SDL_DestroyRenderer(_sdlRenderer);
+  _sdlRenderer = nullptr;
+  SDL_DestroyWindow(_sdlWindow);
+  _sdlWindow = nullptr;
   SDL_Quit();
 }
 
-void Renderer::Render(Snake const snake, SDL_Point const &food) {
-  SDL_Rect block;
-  block.w = screen_width / grid_width;
-  block.h = screen_height / grid_height;
-
-  // Clear screen
-  SDL_SetRenderDrawColor(sdl_renderer, 0x1E, 0x1E, 0x1E, 0xFF);
-  SDL_RenderClear(sdl_renderer);
-
-  // Render food
-  SDL_SetRenderDrawColor(sdl_renderer, 0xFF, 0xCC, 0x00, 0xFF);
-  block.x = food.x * block.w;
-  block.y = food.y * block.h;
-  SDL_RenderFillRect(sdl_renderer, &block);
-
-  // Render snake's body
-  SDL_SetRenderDrawColor(sdl_renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-  for (SDL_Point const &point : snake.body) {
-    block.x = point.x * block.w;
-    block.y = point.y * block.h;
-    SDL_RenderFillRect(sdl_renderer, &block);
-  }
-
-  // Render snake's head
-  block.x = static_cast<int>(snake.head_x) * block.w;
-  block.y = static_cast<int>(snake.head_y) * block.h;
-  if (snake.alive) {
-    SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x7A, 0xCC, 0xFF);
-  } else {
-    SDL_SetRenderDrawColor(sdl_renderer, 0xFF, 0x00, 0x00, 0xFF);
-  }
-  SDL_RenderFillRect(sdl_renderer, &block);
-
+void renderer::updateScreen() {
   // Update Screen
-  SDL_RenderPresent(sdl_renderer);
+  SDL_RenderPresent(_sdlRenderer);
 }
 
-void Renderer::UpdateWindowTitle(int score, int fps) {
-  std::string title{"Snake Score: " + std::to_string(score) + " FPS: " + std::to_string(fps)};
-  SDL_SetWindowTitle(sdl_window, title.c_str());
+void renderer::clearScreen() {
+  // clear Screen
+  SDL_SetRenderDrawColor(_sdlRenderer, 0x1E, 0x1E, 0x1E, 0xFF);
+  SDL_RenderClear(_sdlRenderer);
+}
+
+void renderer::updateWindowTitle(std::string title) {
+  SDL_SetWindowTitle(_sdlWindow, title.c_str());
+}
+
+const std::size_t renderer::getScreenWidth(){
+  return _screenWidth;
+}
+
+const std::size_t renderer::getScreenHeight(){
+  return _screenHeight;
+}
+
+SDL_Renderer *renderer::getRender(){
+  return _sdlRenderer;
+}
+
+SDL_Window *renderer::getWindows(){
+  return _sdlWindow;
+}
+
+// function does basic tranformation and renders the shape on to the screen
+void renderer::renderObject(const std::vector<std::pair<float, float>> &modelCoordinates, float x, float y, float r = 0.0f, float s = 1.0f)
+{
+		
+  // Create translated model vector of coordinate pairs
+  std::vector<std::pair<float, float>> transformedCoordinates;
+  int verts = modelCoordinates.size();
+  transformedCoordinates.resize(verts);
+
+  // Rotate
+  for (int i = 0; i < verts; i++)
+  {
+    transformedCoordinates[i].first = modelCoordinates[i].first * cosf(r) - modelCoordinates[i].second * sinf(r);
+    transformedCoordinates[i].second = modelCoordinates[i].first * sinf(r) + modelCoordinates[i].second * cosf(r);
+  }
+
+  // Scale
+  for (int i = 0; i < verts; i++)
+  {
+    transformedCoordinates[i].first = transformedCoordinates[i].first * s;
+    transformedCoordinates[i].second = transformedCoordinates[i].second * s;
+  }
+
+  // Translate
+  for (int i = 0; i < verts; i++)
+  {
+    transformedCoordinates[i].first = transformedCoordinates[i].first + x;
+    transformedCoordinates[i].second = transformedCoordinates[i].second + y;
+  }
+
+  // Draw Closed Polygon
+  for (int i = 0; i < verts + 1; i++)
+  {
+    int j = (i + 1);
+    SDL_RenderDrawLine(_sdlRenderer, transformedCoordinates[i % verts].first, transformedCoordinates[i % verts].second, 
+                       transformedCoordinates[j % verts].first, transformedCoordinates[j % verts].second);
+  } 
 }

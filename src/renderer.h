@@ -1,27 +1,27 @@
-#ifndef RENDERER_H
-#define RENDERER_H
+#pragma once
 
+#include <iostream>
+#include <string>
 #include <vector>
 #include "SDL.h"
-#include "snake.h"
 
-class Renderer {
+class renderer {
  public:
-  Renderer(const std::size_t screen_width, const std::size_t screen_height,
-           const std::size_t grid_width, const std::size_t grid_height);
-  ~Renderer();
-
-  void Render(Snake const snake, SDL_Point const &food);
-  void UpdateWindowTitle(int score, int fps);
+  ~renderer();
+  void init(const std::size_t screenWidth, const std::size_t screenHeight);
+  SDL_Renderer *getRender();
+  SDL_Window *getWindows();
+  const std::size_t getScreenWidth();
+  const std::size_t getScreenHeight();
+  void updateWindowTitle(std::string title);
+  void updateScreen(void);
+  void clearScreen(void);
+  void renderObject(const std::vector<std::pair<float, float>> &modelCoordinates, float x, float y, float r, float s);
 
  private:
-  SDL_Window *sdl_window;
-  SDL_Renderer *sdl_renderer;
-
-  const std::size_t screen_width;
-  const std::size_t screen_height;
-  const std::size_t grid_width;
-  const std::size_t grid_height;
+  SDL_Window *_sdlWindow;
+  SDL_Renderer *_sdlRenderer;
+  std::size_t _screenWidth=640;
+  std::size_t _screenHeight=640;
 };
 
-#endif

@@ -1,33 +1,28 @@
-#ifndef GAME_H
-#define GAME_H
+#pragma once
 
-#include <random>
-#include "SDL.h"
-#include "controller.h"
+#include <iostream>
 #include "renderer.h"
-#include "snake.h"
+#include "player.h"
+#include "asteroids.h"
 
-class Game {
+class game {
  public:
-  Game(std::size_t grid_width, std::size_t grid_height);
-  void Run(Controller const &controller, Renderer &renderer,
-           std::size_t target_frame_duration);
-  int GetScore() const;
-  int GetSize() const;
-
+    game(const std::size_t screenWidth, const std::size_t screenHeight, const std::size_t targetFrameDuration);
+    void run(void);
+    void reset(void);
+    int getScore();
+    
  private:
-  Snake snake;
-  SDL_Point food;
+   bool _isRunning;
+   std::size_t _targetFrameDuration;
+   void handleInput(void);
+   renderer _renderer;
+   player _player;
+   std::vector<asteroids> _asteroidsVector;
+   std::vector<bullet> _bulletsVector;
+   bool isBulletAsteroidCollide(asteroids &as, bullet &bl);
+   int _score=0;
+   int _maxAsteroids = 10;
+   int _numberOfAsteroids = 0;
 
-  std::random_device dev;
-  std::mt19937 engine;
-  std::uniform_int_distribution<int> random_w;
-  std::uniform_int_distribution<int> random_h;
-
-  int score{0};
-
-  void PlaceFood();
-  void Update();
 };
-
-#endif
